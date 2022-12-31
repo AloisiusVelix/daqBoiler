@@ -1,0 +1,144 @@
+#include <Wire.h>
+#include "DFRobot_SHT20.h"
+#include "cactus_io_SHT31.h"
+#include <OneWire.h>
+#include <DallasTemperature.h>
+
+#define TCA9548 0x70
+//#define atm 101.325
+
+unsigned long start_time;
+
+OneWire pin1_DS18B20(4);
+OneWire pin2_DS18B20(5);
+DallasTemperature DS18B20_1(&pin1_DS18B20);
+DallasTemperature DS18B20_2(&pin2_DS18B20);
+DFRobot_SHT20 sht20_1;
+DFRobot_SHT20 sht20_2;
+cactus_io_SHT31 sht31_3;
+cactus_io_SHT31 sht31_4;
+cactus_io_SHT31 sht31_5;
+cactus_io_SHT31 sht31_6;
+
+float ptRead(uint8_t adcPin) {
+  float sensorVal = analogRead(adcPin);
+  float voltage = sensorVal * 5 * 1000 / 1024;
+  //  float voltage = sensorVal * 3.3 * 1000 / 4096;
+  float pres = (voltage - 500) / 400;
+  return (pres);
+}
+
+void TCSelect(uint8_t i) {
+  if (i > 7) return;
+  Wire.beginTransmission(TCA9548);
+  Wire.write(1 << i);
+  Wire.endTransmission();
+}
+
+void setup()
+{
+  Serial.begin(115200);
+  Wire.begin();
+
+  //  DS18B20
+  DS18B20_1.begin();
+  DS18B20_2.begin();
+  //
+  //  //  Pressure
+  //  pinMode(A6, INPUT);
+  //  pinMode(A7, INPUT);
+  //
+  //  //  Motor DC
+  //  pinMode(A0, INPUT);
+  //  pinMode(A1, INPUT);
+  //  pinMode(A2, INPUT);
+
+  //  SHT20
+  delay(10);
+  
+  TCSelect(1);
+  sht20_1.initSHT20();
+  delay(10);
+  
+  TCSelect(2);
+  sht20_2.initSHT20();
+  delay(10);
+  
+  TCSelect(3);
+  delay(10);
+  
+  TCSelect(4);
+  delay(10);
+
+  TCSelect(5);
+  delay(10);
+
+  TCSelect(6);
+  delay(10);
+}
+
+void loop()
+{
+  //DS18B20
+  DS18B20_1.requestTemperatures();
+  DS18B20_2.requestTemperatures();
+  float tempF1 = DS18B20_1.getTempCByIndex(0);
+  float tempF2 = DS18B20_2.getTempCByIndex(0);
+
+  //Pressure
+  float pressure1 = ptRead(A6);
+  float pressure2 = ptRead(A7);
+
+  //Motor DC
+  float Motor1 = (analogRead(A0) * 0.032) - 1.19;
+  float Motor2 = (analogRead(A1) * 0.032) - 0.22;
+  float Motor3 = (analogRead(A2) * 0.032) - 0.06;
+
+  //SHT
+  TCSelect(1);
+  float humd1 = sht20_1.readHumidity();
+  float temp1 = sht20_1.readTemperature();
+
+  TCSelect(2);
+  float humd2 = sht20_2.readHumidity();
+  float temp2 = sht20_2.readTemperature();
+
+  TCSelect(3);
+  float humd3 = sht31_3.getHumidity();
+  float temp3 = sht31_3.getTemperature_C();
+
+  TCSelect(4);
+  float humd4 = sht31_4.getHumidity();
+  float temp4 = sht31_4.getTemperature_C();
+
+  TCSelect(5);
+  float humd5 = sht31_5.getHumidity();
+  float temp5 = sht31_5.getTemperature_C();
+
+  TCSelect(6);
+  float humd6 = sht31_6.getHumidity();
+  float temp6 = sht31_6.getTemperature_C();
+
+  if ((millis() - start_time) >= 1000) {
+    start_time = millis();
+    Serial.println(pressure1);
+    Serial.println(pressure2);
+    Serial.println(Motor1);
+    Serial.println(Motor2);
+    Serial.println(Motor3);
+    Serial.println(temp1);
+    Serial.println(temp2);
+    Serial.println(temp3);
+    Serial.println(temp4);
+    Serial.println(temp5);
+    Serial.println(temp6);
+    Serial.println(humd1);
+    Serial.println(humd2);
+    Serial.println(humd3);
+    Serial.println(humd4);
+    Serial.println(humd5);
+    Serial.println(humd6);
+    Serial.println(tempF1);
+    Serial.println(tempF2);
+  }
+}
